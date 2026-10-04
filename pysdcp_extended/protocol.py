@@ -1,15 +1,22 @@
-# Defines and protocol details from here: https://www.digis.ru/upload/iblock/f5a/VPL-VW320,%20VW520_ProtocolManual.pdf
+"""Protocol constants for SDCP (PJ Talk) and SDAP.
 
-ACTIONS = {
-    "GET": 0x01,
-    "SET": 0x00
-}
+Defines and protocol details from here:
+https://www.digis.ru/upload/iblock/f5a/VPL-VW320,%20VW520_ProtocolManual.pdf
+"""
 
-#Command
+from __future__ import annotations
 
-#Fire and forget, no response from the projector
+SDCP_VERSION = 2
+SDCP_CATEGORY = 0x0A
+
+ACTIONS = {"GET": 0x01, "SET": 0x00}
+
+# Simulated IR commands: fire and forget, no response from the projector.
+# The high byte of the command selects the IR code set:
+# PROJECTOR = 0x17, PROJECTOR-E = 0x19, PROJECTOR-EE = 0x1B.
+IR_COMMAND_PREFIXES = (0x17, 0x19, 0x1B)
+
 COMMANDS_IR = {
-    #PROJECTOR=17, PROJECTOR-E=19, PROJECTOR-EE=1B
     "MENU": 0x1729,
     "CURSOR_RIGHT": 0x1733,
     "CURSOR_LEFT": 0x1734,
@@ -48,7 +55,7 @@ COMMANDS = {
     "GET_STATUS_LAMP_TIMER": 0x0113,
 }
 
-#Data
+# Data
 
 CALIBRATION_PRESETS = {
     "CINEMA_FILM_1": 0x0000,
@@ -62,15 +69,15 @@ CALIBRATION_PRESETS = {
     "USER": 0x0008,
 }
 
-LAMP_CONTROL= {
+LAMP_CONTROL = {
     "LOW": 0x0000,
     "HIGH": 0x0001,
 }
 
-ADVANCED_IRIS= {
+ADVANCED_IRIS = {
     "OFF": 0x0000,
     "FULL": 0x0002,
-    "LIMITED": 0x0003
+    "LIMITED": 0x0003,
 }
 
 MOTIONFLOW = {
@@ -79,7 +86,7 @@ MOTIONFLOW = {
     "SMOTH_LOW": 0x0002,
     "IMPULSE": 0x0003,
     "COMBINATION": 0x0004,
-    "TRUE_CINEMA": 0x0005
+    "TRUE_CINEMA": 0x0005,
 }
 
 HDR = {
@@ -88,7 +95,7 @@ HDR = {
     "AUTO": 0x0002,
 }
 
-INPUT_LAG_REDUCTION= {
+INPUT_LAG_REDUCTION = {
     "OFF": 0x0000,
     "ON": 0x0001,
 }
@@ -100,7 +107,7 @@ PICTURE_POSITIONS = {
     "CUSTOM_2": 0x0003,
     "CUSTOM_3": 0x0004,
     "CUSTOM_4": 0x0005,
-    "CUSTOM_5": 0x0006
+    "CUSTOM_5": 0x0006,
 }
 
 ASPECT_RATIOS = {
@@ -109,13 +116,13 @@ ASPECT_RATIOS = {
     "ZOOM_1_85": 0x000C,
     "ZOOM_2_35": 0x000D,
     "STRETCH": 0x000E,
-    "SQUEEZE": 0x000F
+    "SQUEEZE": 0x000F,
 }
 
 DYNAMIC_RANGES = {
     "AUTO": 0x0000,
     "LIMITED": 0x0001,
-    "FULL": 0x0002
+    "FULL": 0x0002,
 }
 
 TWO_D_THREE_D_SELECT = {
@@ -140,12 +147,32 @@ PICTURE_MUTING = {
     "ON": 0x0001,
 }
 
-MENU_POSITIONS= {
+MENU_POSITIONS = {
     "BOTTOM_LEFT": 0x0000,
     "CENTER": 0x0001,
 }
 
-#Response data
+# Settings that can be read and written with a named value.
+# Maps a key of COMMANDS to the table of valid values for that command.
+SETTINGS: dict[str, dict[str, int]] = {
+    "CALIBRATION_PRESET": CALIBRATION_PRESETS,
+    "LAMP_CONTROL": LAMP_CONTROL,
+    "ADVANCED_IRIS": ADVANCED_IRIS,
+    "MOTIONFLOW": MOTIONFLOW,
+    "HDR": HDR,
+    "INPUT_LAG_REDUCTION": INPUT_LAG_REDUCTION,
+    "PICTURE_POSITION": PICTURE_POSITIONS,
+    "ASPECT_RATIO": ASPECT_RATIOS,
+    "HDMI1_DYNAMIC_RANGE": DYNAMIC_RANGES,
+    "HDMI2_DYNAMIC_RANGE": DYNAMIC_RANGES,
+    "2D_3D_DISPLAY_SELECT": TWO_D_THREE_D_SELECT,
+    "3D_FORMAT": THREE_D_FORMATS,
+    "INPUT": INPUTS,
+    "PICTURE_MUTING": PICTURE_MUTING,
+    "MENU_POSITION": MENU_POSITIONS,
+}
+
+# Response data
 
 ERROR_STATUS = {
     "NO_ERROR": 0,
@@ -164,7 +191,7 @@ POWER_STATUS = {
     "START_UP_LAMP": 2,
     "POWER_ON": 3,
     "COOLING": 4,
-    "COOLING2": 5
+    "COOLING2": 5,
 }
 
 RESPONSE_ERRORS = {
@@ -191,3 +218,20 @@ RESPONSE_ERRORS = {
     0xF110: "NVRAM Error: Read Error",
     0xF120: "NVRAM Error: Write Error",
 }
+
+
+def is_ir_command(command: int) -> bool:
+    """Return True if the command is a simulated IR command (no response expected)."""
+    return (command >> 8) in IR_COMMAND_PREFIXES
+
+
+def value_name(table: dict[str, int], value: int) -> str | int:
+    """Reverse lookup of a value in a value table.
+
+    Returns the name for ``value`` if the table knows it, otherwise ``value`` itself
+    so callers still see what the projector sent.
+    """
+    for name, table_value in table.items():
+        if table_value == value:
+            return name
+    return value
