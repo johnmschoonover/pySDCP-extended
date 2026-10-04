@@ -14,6 +14,10 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "Topic :: Home Automation",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
 ]
 # Need as the package name contains a hyphen
 packages = [
@@ -23,6 +27,50 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.11"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8"
+pytest-cov = ">=5"
+ruff = ">=0.6"
+mypy = ">=1.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.coverage.run]
+source = ["pysdcp_extended"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+# The two CLI entry points only parse arguments and loop forever.
+exclude_also = ["if __name__ == .__main__.:"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+# Code blocks in the Markdown docs are laid out for reading, not for the formatter.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "N"]
+ignore = [
+    "RUF012", # mutable class attributes in simple dataclasses / servers
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Public names like set_HDMI_input and process_SDAP predate this config and are kept for compatibility.
+"pysdcp_extended/__init__.py" = ["N802", "N803"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["pysdcp_extended", "tests"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_decorators = false
 
 [build-system]
 requires = ["poetry-core"]
